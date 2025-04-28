@@ -1,6 +1,19 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/28 15:09:46 by ilevy             #+#    #+#             */
+/*   Updated: 2025/04/28 15:09:47 by ilevy            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <string>
 #include <iostream>
-#include "Server.hpp"
+#include "../hpp_files/Server.hpp"
+
 
 int	main(int ac, char **av)
 {
@@ -70,7 +83,7 @@ int	main(int ac, char **av)
 		so that <bind> will take possession of the given port even if there is still a connection in TIME_WAIT state using it
 			(the connections of the new program will coexist with the old connection in TIME_WAIT state,
 				the only constraint is the new program won't be able to create a connection with exactly the same "quad" as the old connection)
-	
+
 
 
 - essayer d'utiliser wireshark

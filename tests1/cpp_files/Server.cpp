@@ -1,4 +1,16 @@
-#include "Server.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Server.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/28 15:09:50 by ilevy             #+#    #+#             */
+/*   Updated: 2025/04/28 15:09:51 by ilevy            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "../hpp_files/Server.hpp"
 
 /////////////////////////////
 // CANONICAL ORTHODOX FORM //
@@ -61,7 +73,7 @@ int		Server::startServer(void)
 	if (listen(this->_mainSocketFd, MAX_QUEUED_CONNECTIONS) < 0)
 		return (logError("[startServer] error when passing main socket into 'listen' mode", 1));
 	std::cout << "[startServer] main socket passed into 'listen' mode\n";
-	return (0);	
+	return (0);
 }
 
 // Handles connections received by the (currently listening) main socket
@@ -88,7 +100,7 @@ int		Server::waitForConnection(void)
 	std::cout << "[waitForConnection] connection accepted in socket fd " << clientSocketFd
 		<< " (IP " << inet_ntoa(clientAddress.sin_addr)
 		<< " ; port " << ntohs(clientAddress.sin_port) << ")\n";
-	
+
 	return (this->handleClientRequest(clientSocketFd));
 }
 
