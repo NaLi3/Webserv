@@ -1,13 +1,25 @@
-#include "../hpp_files/Webserv.hpp"
+#include "../hpp_files/webserv.hpp"
 
 /////////////////////////////
 // CANONICAL ORTHODOX FORM //
 /////////////////////////////
 
-Client::Client(int clientSocketFd)
+
+// Parameters to constructor :
+// 		\ <clientSocketFd> is the fd of the socket connecting the server to this client
+// 		\ <mainSocket> is (a reference to) the structure representing the main socket
+// 		  where this client first reached the server and was accepted
+// 			-> necessary because it holds in field <portaddr> the portaddr used for connection
+// 			   and in field <vservIndexes> the indexes of the virtual servers listening on that portaddr
+// 					<=> the indexes of the virtual servers to which the client has access
+// 		\ <vservers> is (a reference to) a list of structures representing the virtual servers
+// 			(the indexes in <mainSocket.vservIndexes> are positions in this list)
+Client::Client(int socketFd, t_mainSocket& mainSocket, std::vector<t_vserver>& vservers) :
+	_socketFd(socketFd), _mainSocket(mainSocket), _vservers(vservers)
 {
-	std::cout << "Parameter constructor for Client\n";
-	this->_socketFd = clientSocketFd;
+	std::cout << "Parameter constructor for ClientHandler\n";
+	std::cout << "\tdedicated socket has fd " << this->_socketFd << " ; main socket had fd "
+		<< this->_mainSocket.fd << " listening on " << this->_mainSocket.portaddr << "\n";
 	this->_state = RECEIVING;
 	this->_response_sent = false;
 }
@@ -27,10 +39,20 @@ int	Client::getSocketFd() const
 	return (this->_socketFd);
 }
 
+t_mainSocket&	Client::getMainSocket(void)
+{
+	return (this->_mainSocket);
+}
+
 ////////////////////
 // MAIN INTERFACE //
 ////////////////////
 
+
+// Fills the <poll> struct with the expected event information
+// 		\ fd of the socket dedicated to this client
+// 		\ event flags depending on whether this client must send a request,
+// 			or data must be sent to this client
 void	Client::preparePollFd(struct pollfd& pfd)
 {
 	pfd.fd = this->_socketFd;
@@ -40,6 +62,8 @@ void	Client::preparePollFd(struct pollfd& pfd)
 		pfd.events = POLLOUT;
 }
 
+// Redirects an event received on the socket of this client to the correct method
+// (apparently event POLLHUP is never received for sockets)
 int		Client::handleEvent(struct pollfd& pfd)
 {
 	if ((pfd.revents & POLLIN) && this->_state == RECEIVING)
@@ -54,19 +78,32 @@ int		Client::handleEvent(struct pollfd& pfd)
 	return (0);
 }
 
+// Uses function <send> to send the data in <_response> through the socket
+// The socket may be too small to accept the full <_response>,
+// 		so the progress in number of bytes sent is registered in <_nBytesSent>
+// 		in order to send the next part of <_response> at the next call of <sendHTTP>
+// -> state is changed from "SENDING" to "RECEIVING" only when the full <_response> was sent
 int		Client::sendHTTP(void)
 {
 	unsigned int	nBytesWritten;
 
-	std::cout << "\t[CH::sendHTTP] sending to client with socket at fd " << this->_socketFd << "\n";
-	nBytesWritten = send(this->_socketFd, "coucou", 6, 0);
-	if (nBytesWritten != 6)
+	std::cout << "\t[CH::sendHTTP] sending to client with socket at fd " << this->_socketFd
+		<< " ; bytes sending progress : " << this->_nbytesSent_tmp << " / " << this->_response_buffer.size() << "\n";
+	nBytesWritten = send(this->_socketFd, this->_response_buffer.c_str() + this->_nbytesSent_tmp,
+											this->_response_buffer.size() - this->_nbytesSent_tmp, 0);
+	if (nBytesWritten <= 0)
 		return (logError("\t[CH::receiveHTTP] error when writing to socket", 1));
-	this->_state = RECEIVING;
+	std::cout << "\t[CH::sendHTTP] sent " << nBytesWritten << " bytes\n";
+	this->_nbytesSent_tmp += nBytesWritten;
+	if (this->_nbytesSent_tmp >= this->_response_buffer.size())
+	{
+		std::cout << "\t[CH::sendHTTP] full response sent\n";
+		this->_state = RECEIVING;
+		this->_response_sent = 1;
+	}
 	return (0);
 }
 
-// #f : check if there is still stuff to read, pass to SENDING only when fully read
 int		Client::receiveHTTP(void)
 {
 	char			buffer[1024];
@@ -90,24 +127,18 @@ int		Client::receiveHTTP(void)
 		if (!this->_request.parse(this->_request_buffer))
 		{
 			std::cout << "Bad Request" << std::endl;
-			// std::cout << "Method: " << _request.getMethod() << "\n";
-			// std::cout << "Path: " << _request.getPath() << "\n";
-			// std::cout << "Headers:\n";
-			// for (auto it = _request.getHeaders().begin(); it != _request.getHeaders().end(); ++it)
-			// std::cout << it->first << ": " << it->second << "\n";
+			// this->_request.log_request();
 			return (400);
 		}
 		else
 		{
 			this->_response_buffer = "Placeholder response builder";
 		}
-		std::cout << "Method: " << _request.getMethod() << "\n";
-		std::cout << "Path: " << _request.getPath() << "\n";
-		std::cout << "Headers:\n";
-		for (auto it = _request.getHeaders().begin(); it != _request.getHeaders().end(); ++it)
-			std::cout << it->first << ": " << it->second << "\n";
+		this->_request.log_request();
+		
 		this->_state = SENDING;
 		this->_response_sent = false;
+		this->_nbytesSent_tmp = 0;
 	}
 	return (0);
 }

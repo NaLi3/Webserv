@@ -1,7 +1,7 @@
 #ifndef CLIENT_H
 # define CLIENT_H
 
-# include "Webserv.hpp"
+# include "webserv.hpp"
 
 enum ClientState
 {
@@ -15,7 +15,7 @@ class	Client;
 class	Client
 {
 	public:
-		Client( int clientSocketFd );
+		Client(int socketFd, t_mainSocket& mainSocket, std::vector<t_vserver>& vservers);
 		~Client( void );
 		// Mainloop
 		void					preparePollFd( struct pollfd& pfd );
@@ -25,12 +25,17 @@ class	Client
 		const	std::string&	getRequestBuffer( void ) const;
 		void					setResponse( const std::string& response_msg );
 		bool					isRequestrComplete( void ) const;
+		t_mainSocket&			getMainSocket(void);
 	private:
 		int						receiveHTTP( void );
 		int						sendHTTP( void );
 
 		int						_socketFd;
+		t_mainSocket&			_mainSocket;
+		std::vector<t_vserver>&	_vservers;
 		int						_state;
+		unsigned int			_nbytesSent_tmp;
+
 		std::string				_request_buffer;
 		std::string				_response_buffer;
 		bool					_response_sent;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
+/*   By: administyrateur <administyrateur@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 15:48:28 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/01 11:54:31 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 16:36:42 by administyra      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
 
-# include "Webserv.hpp"
+# include "webserv.hpp"
 
 /*Request takes in the data from Client upon verification of Client's 'isComplete()' method.
   If the client read a complete http message, the parse() method of Client's request attribute
@@ -35,12 +35,14 @@ class Request
 		bool	parse_request( const std::string& raw_request, size_t header_end );
 		bool	parse_headers( const std::string& raw_request, size_t header_end );
 
+
 	public:
 		Request( void );
 		~Request( void );
 
 		bool	parse( const std::string& raw_request );
 		bool	isComplete( const std::string& buffer ) const;
+		void	log_request(void);
 
 		const std::string& getMethod( void ) const;
 		const std::string& getPath( void ) const;

@@ -3,17 +3,19 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+         #
+#    By: administyrateur <administyrateur@studen    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/26 15:17:49 by ilevy             #+#    #+#              #
-#    Updated: 2025/05/02 14:23:49 by ilevy            ###   ########.fr        #
+#    Updated: 2025/05/02 16:11:41 by administyra      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = webserv
 
 SRCS_FOLDER = cpp_files/
-SRCS_OBJECTS = utils.cpp Request.cpp Server.cpp main.cpp Client.cpp
+SRCS_OBJECTS = 	utils.cpp main.cpp \
+				Client.cpp Server.cpp \
+				Request.cpp cfgParsing.cpp
 SRCS = $(addprefix $(SRCS_FOLDER), $(SRCS_OBJECTS))
 OBJS = $(addprefix $(OBJ_DIR), $(SRCS_OBJECTS:.cpp=.o))
 OBJ_DIR = o_files/

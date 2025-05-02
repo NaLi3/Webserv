@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
+/*   By: administyrateur <administyrateur@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 16:08:40 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/02 14:02:02 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 16:47:30 by administyra      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../hpp_files/Webserv.hpp"
+#include "../hpp_files/webserv.hpp"
 
 Request::Request( void )
 {
@@ -176,3 +176,15 @@ bool	Request::parse_headers( const std::string& raw_request, size_t header_end )
 	}
 	return (true);
 }
+
+void	Request::log_request(void)
+{
+	std::cout << "===== REQUEST COMPONENTS\n";
+	std::cout << "Method: " << this->getMethod() << "\n";
+	std::cout << "Path: " << this->getPath() << "\n";
+	std::cout << "Headers:\n";
+	for (auto it = this->getHeaders().begin(); it != this->getHeaders().end(); ++it)
+		std::cout << it->first << ": " << it->second << "\n";
+	std::cout << "=====\n";
+}
+

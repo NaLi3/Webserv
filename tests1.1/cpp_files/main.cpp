@@ -3,29 +3,39 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
+/*   By: administyrateur <administyrateur@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/28 15:09:46 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/02 13:56:39 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 16:53:04 by administyra      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <string>
-#include <iostream>
-#include "../hpp_files/Webserv.hpp"
+#include "../hpp_files/webserv.hpp"
 
-int LOGSV = 1;
+int 			LOGSV = 1;
+volatile int	g_global_signal;
+
+void	handleSigint(int sigNum)
+{
+	if (sigNum == SIGINT)
+		g_global_signal = 1;
+}
 
 int	main(int ac, char **av)
 {
-	Server		serv("cfg");
-
 	(void)ac;
 	(void)av;
+	g_global_signal = 0;
+	std::signal(SIGINT, &handleSigint);
+
+	
+	Server		serv("webserv.conf");
 	if (serv.startServer())
 		return (1);
 	if (serv.serverLoop())
 		return (1);
+	std::cout << "Program exiting\n";
+
 	return (0);
 }
 
@@ -84,9 +94,76 @@ int	main(int ac, char **av)
 			(the connections of the new program will coexist with the old connection in TIME_WAIT state,
 				the only constraint is the new program won't be able to create a connection with exactly the same "quad" as the old connection)
 
+////////////////////
+// CODE STRUCTURE //
+////////////////////
 
++ build true server loop with <poll>
++ test some <write> in a socket (see results with curl/nc)
++ catch signals to shutdown server cleanly (close all sockets and return)
+- parsing of config file (always define a default when a directive is absent)
+	\ set port and name of each (virtual) server : `listen address:port`, `server_name name`
+		/!\ server name can be an IP
+	\ set default error pages : `error_page errcode page_uri`
+	\ set maximum allowed size for client request bodies : `client_max_body_size size`
+		/!\ size expressed in some defined unit, or accept characters 'K/M/G' for units ?
+	\ set and configure routes
+		~ define route prepended to a certain requested path : `location path {root prepend}` -> true path is prepend/path
+		~ define accepted HTTP methods for a route : `limit_except method` inside location
+		~ define HTTP redirect (code 301) : `location oldpath {return 301 newpath}`
+	\ enable|disable directory listing : `autoindex on|off` inside location
+	\ define a default file to serve when request ends in '/' : `index filename` in location
+	\ define file extensions for which CGI should be executed, for POST and GET : custom
+	\ allow uploading files with POST/PUT methods, define storage location : custom
+- parsing des requetes GET/POST/DELETE
 
-- essayer d'utiliser wireshark
-- verifier comment catch les signaux pour toujours shutdown le serveur proprement
+- handle multiple "virtual" servers :
+	\ by parsing cfg file, we have a set of ports+address on which to read
+	  and a representation of all "virtual" servers by a list of structs (?)
+	\ we setup a main socket FOR EACH different IPaddress+port ;
+	  when it receives incoming connection we PEEK (not removing request content from reading queue)
+	  into the request to determine to which "virtual" server the request is directed,
+	  	according to the port+address of reception and the domain name of request
+	\ each ClientHandler instance has the index of its "virtual" server,
+		so events from dedicated sockets (ie. from clients already connected)
+		are directed to the "virtual" server of their ClientHandler, no need of further checks
+- processing of GET requests according to URI :
+	\ if ending without a '/' <=> a file with a file extension, serve the resource if it exists
+		/!\ redirections / index files defined in conf file may cause a recurrence on another resource URI
+	\ if ending with a '/' <=> a directory : search for an 'index.html' file at this location
+		if there is none and autoindex option is set generate the index, otherwise return 404
 
+- specific names chosen for clarity :
+	\ "portaddr" = a pair constituted by an IP address (int32, potentially 0 for 'any') and a port number (int16)
+		representing an interface and a port to which a socket can listen
+	\ "client" = instances of the class "Client", with an assigned socket,
+		handling all the traffic on that socket (<=> all the communication with 1 client)
+	\ "main socket" = a socket that will always be listening without maintaining any TCP connection
+	  "dedicated socket" = the socket maintaining TCP connection with a client in particular
+  		-> an incoming connection from a client is received on main socket,
+			and the call to <accept> creates the dedicated socket that will communicate with client through TCP
+		/!\ the server polls both main and dedicated sockets, but events on dedicates sockets are handled
+			by the corresponding instance of <Client>
+
+///////////////
+// TODO MISC //
+///////////////
+
+- tests
+	\ faire quelques tests avec nginx pour voir le contenu des headers
+	\ tests avec Firefox/curl/nc + eventuellement un script de test
+	\ essayer d'utiliser wireshark
+- remplacer les pair<int,short> par un type portaddr, avec un typedef
+
+- petites differences apres la mise en commun :
+	\ ajout de la gestion de SIGINT
+	\ retrait de la majuscule pour les headers ne definissant pas une classe
+	\ ajout du parsing du fichier de cfg (qui n'est pas tres elegant)
+	\ deplacement du log des elements de Request dans une methode de la classe Request
+	\ les instances de Client recoivent la liste des serveurs virtuels en parametre de constructeur,
+		pour leur permettre d'identifier a quel serveur virtuel la requete en cours est adressee
+	\ le Client envoie son placeholder de reponse (pas reconnu par Firefox puisque pas HTTP mais visible avec netcat par ex),
+		potentiellement en plusieurs paquets en utilisant _nBytesSent_tmp comme marqueur
+	\ allegement du fichier de conf pour que les tests soient plus lisibles en ecoutant sur un seul portaddr,
+		mais il faudra refaire des tests avec pleins de serveurs virtuels sur plein de portaddrs
 */
