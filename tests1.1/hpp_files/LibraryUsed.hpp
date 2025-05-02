@@ -6,7 +6,7 @@
 /*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 15:49:54 by ilevy             #+#    #+#             */
-/*   Updated: 2025/04/30 15:51:28 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 13:24:29 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,5 +26,7 @@
 # include <map>
 # include <sys/socket.h>
 # include <arpa/inet.h>
+# include <poll.h>
+# include <strings.h>
 
 #endif

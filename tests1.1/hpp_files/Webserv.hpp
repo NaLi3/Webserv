@@ -6,7 +6,7 @@
 /*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/28 15:19:26 by ilevy             #+#    #+#             */
-/*   Updated: 2025/04/30 16:13:00 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 13:42:32 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,11 @@
 #ifndef WEBSERV_HPP
 # define WEBSERV_HPP
 
-int	LOGSV = -1;
+extern int	LOGSV;
 
 # include "LibraryUsed.hpp"
+# include "Request.hpp"
 # include "Client.hpp"
 # include "Server.hpp"
-# include "Request.hpp"
 
 #endif

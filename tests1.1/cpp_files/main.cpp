@@ -6,7 +6,7 @@
 /*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/28 15:09:46 by ilevy             #+#    #+#             */
-/*   Updated: 2025/04/28 21:51:06 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 13:56:39 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,20 +14,18 @@
 #include <iostream>
 #include "../hpp_files/Webserv.hpp"
 
+int LOGSV = 1;
 
 int	main(int ac, char **av)
 {
 	Server		serv("cfg");
-	Client		client()
-
 
 	(void)ac;
 	(void)av;
 	if (serv.startServer())
 		return (1);
-	if (serv.waitForConnection())
+	if (serv.serverLoop())
 		return (1);
-
 	return (0);
 }
 

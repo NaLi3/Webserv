@@ -9,6 +9,7 @@ Client::Client(int clientSocketFd)
 	std::cout << "Parameter constructor for Client\n";
 	this->_socketFd = clientSocketFd;
 	this->_state = RECEIVING;
+	this->_response_sent = false;
 }
 
 Client::~Client(void)
@@ -21,7 +22,7 @@ Client::~Client(void)
 // ACCESSORS //
 ///////////////
 
-int	Client::getSocketFd()
+int	Client::getSocketFd() const
 {
 	return (this->_socketFd);
 }
@@ -83,6 +84,30 @@ int		Client::receiveHTTP(void)
 	}
 	std::cout << "\t[CH::receiveHTTP] Content read from socket"
 		<< " :\n\033[32m< HTTP ---\n" << std::string(buffer) << "\n--- HTTP >\033[0m\n";
-	this->_state = SENDING;
+	this->_request_buffer.append(buffer, nBytesRead);
+	if (this->_request.isComplete(this->_request_buffer))
+	{
+		if (!this->_request.parse(this->_request_buffer))
+		{
+			std::cout << "Bad Request" << std::endl;
+			// std::cout << "Method: " << _request.getMethod() << "\n";
+			// std::cout << "Path: " << _request.getPath() << "\n";
+			// std::cout << "Headers:\n";
+			// for (auto it = _request.getHeaders().begin(); it != _request.getHeaders().end(); ++it)
+			// std::cout << it->first << ": " << it->second << "\n";
+			return (400);
+		}
+		else
+		{
+			this->_response_buffer = "Placeholder response builder";
+		}
+		std::cout << "Method: " << _request.getMethod() << "\n";
+		std::cout << "Path: " << _request.getPath() << "\n";
+		std::cout << "Headers:\n";
+		for (auto it = _request.getHeaders().begin(); it != _request.getHeaders().end(); ++it)
+			std::cout << it->first << ": " << it->second << "\n";
+		this->_state = SENDING;
+		this->_response_sent = false;
+	}
 	return (0);
 }

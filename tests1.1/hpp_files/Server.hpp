@@ -1,21 +1,12 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Server.hpp                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/28 15:10:01 by ilevy             #+#    #+#             */
-/*   Updated: 2025/04/30 15:49:39 by ilevy            ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef SERVER_H
 # define SERVER_H
+
+# include "Webserv.hpp"
 
 # define MAX_QUEUED_CONNECTIONS 10
 
 class	Server;
+class	Client;
 
 class	Server
 {
@@ -23,13 +14,21 @@ class	Server
 		Server(std::string cfgFileName);
 		~Server();
 		int			startServer(void);
-		int			waitForConnection(void);
-		int			handleClientRequest(int clientSocketFd);
-		int			getSocketFd( void ) const;
+		int			serverLoop(void);
+
+
 	private:
-		uint16_t	_port;
-		std::vector<Client*> clientList;
-		int			_mainSocketFd;
+		uint16_t					_port;
+		int							_mainSocketFd;
+		std::vector<Client*>	client;
+		// Mainloop
+		int			goThroughEvents(struct pollfd* pfds, int nfds);
+		int			handleNewConnection(void);
+		int			handleOldConnection(int clientInd, struct pollfd& pfd);
+		// Utils
+		void		removeClosedConnections(void);
+		int			createPollFds(struct pollfd **pfds);
+		void		displayEvents(short revents);
 };
 
 int	logError(std::string msg, bool displayErrno);

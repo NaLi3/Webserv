@@ -26,18 +26,15 @@ class	Client
 		void					setResponse( const std::string& response_msg );
 		bool					isRequestrComplete( void ) const;
 	private:
-		int			receiveHTTP( void );
-		int			sendHTTP( void );
+		int						receiveHTTP( void );
+		int						sendHTTP( void );
 
-		int			_socketFd;
-		int			_state;
-		std::string	_request_buffer;
-		std::string	_response_buffer;
-		bool		_response_sent;
-		Request		_request;
-		Response	_response;
+		int						_socketFd;
+		int						_state;
+		std::string				_request_buffer;
+		std::string				_response_buffer;
+		bool					_response_sent;
+		Request					_request;
 };
-
-
 
 #endif

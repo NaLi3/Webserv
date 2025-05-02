@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Server.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/28 15:09:50 by ilevy             #+#    #+#             */
+/*   Updated: 2025/05/02 13:32:11 by ilevy            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../hpp_files/Webserv.hpp"
 
 /////////////////////////////
@@ -64,74 +76,18 @@ int		Server::startServer(void)
 	return (0);
 }
 
-int		Server::serverLoop(void)
-{
-	struct pollfd*	pfds;
-	int				nfds;
-	int				nfdsReady;
-
-	std::cout << "Entering server mainloop\n";
-	while (1)
-	{
-		std::cout << "------------\n";
-		nfds = this->createPollFds(&pfds);
-		std::cout << "Poll structures list created, calling <poll>\n";
-		nfdsReady = poll(pfds, nfds, 20000);
-		if (nfdsReady == -1)
-			return (logError("[serverLoop] error during poll", 1));
-		std::cout << "Number of sockets ready for I/O : " << nfdsReady << "\n";
-		if (nfdsReady > 0 && this->goThroughEvents(pfds, nfds))
-			return (1);
-		this->removeClosedConnections();
-		sleep(1);
-	}
-	return (0);
-}
-int		Server::goThroughEvents(struct pollfd* pfds, int nfds)
-{
-	int				clientInd;
-
-	for (clientInd = 0; clientInd < nfds; clientInd++)
-	{
-		if (pfds[clientInd].revents != 0)
-		{
-			std::cout << "Socket fd " << pfds[clientInd].fd << " is ready, events : ";
-			this->displayEvents(pfds[clientInd].revents);
-			if (clientInd == nfds - 1 && handleNewConnection())
-				return (1);
-			if (clientInd < nfds - 1 && this->handleOldConnection(clientInd, pfds[clientInd]))
-				return (1);
-		}
-	}
-	return (0);
-}
-
-int		Server::handleOldConnection(int clientInd, struct pollfd& pfd)
-{
-	int	ret;
-
-	ret = this->client[clientInd]->handleEvent(pfd);
-	if (ret == 1)
-		return (1);
-	if (ret == 2)
-	{
-		delete this->client[clientInd];
-		this->client[clientInd] = NULL;
-	}
-	return (0);
-}
-
-// Handles new connections received by the (currently listening) main socket,
-// 		ie. connections from clients that are not already connected to the server
-// This function is only called if <poll> detected movement on the main socket,
-// 		so it is certain that there are connections waiting in the main socket queue :
-// 			the call to <accept> will select the first one, remove it from the queue,
-// 			and create a new socket + an instance of Client dedicated to that client
+// Handles connections received by the (currently listening) main socket
+// by selecting one of the connections and creating a new socket for it at fd <clientSocketFd>
+// 		\ if connections were already received, they are stored in the socket's queue,
+// 		  so the call to <accept> will select the first one and remove it from the queue
+// 		\ if there are no pending connections (the queue is empty),
+// 		  the call to <accept> will be BLOCKING, waiting for a connection to be received
+// then sends the client socket of the new connection to a function that will handle the client's request
 // /!\ The IPaddress+port stored in <clientAddress> by function <accept> is the client address,
 // 	   ie. the IP address of the client device and the port of this device on which the client receives packets :
 // 			when we call function `send` to send data to client, this IPaddress+port will be used as destination of packet
 // 			(but we do not need to keep it in memory ourselves, ii is managed by the OS)
-int		Server::handleNewConnection(void)
+int		Server::waitForConnection(void)
 {
 	struct sockaddr_in	clientAddress;
 	socklen_t			clientAddressSize;
@@ -140,68 +96,29 @@ int		Server::handleNewConnection(void)
 	clientAddressSize = sizeof(clientAddress);
 	clientSocketFd = accept(this->_mainSocketFd, reinterpret_cast<sockaddr*>(&clientAddress), &clientAddressSize);
 	if (clientSocketFd < 0)
-		return (logError("[handleNewConnection] error when trying to accept an incoming connection", 1));
+		return (logError("[waitForConnection] error when trying to accept an incoming connection", 1));
 	std::cout << "[waitForConnection] connection accepted in socket fd " << clientSocketFd
 		<< " (IP " << inet_ntoa(clientAddress.sin_addr)
 		<< " ; port " << ntohs(clientAddress.sin_port) << ")\n";
-	this->client.push_back(new Client(clientSocketFd));
+
+	return (this->handleClientRequest(clientSocketFd));
+}
+
+int		Server::handleClientRequest(int clientSocketFd)
+{
+	char			buffer[1024];
+	unsigned int	nBytesRead;
+
+	nBytesRead = read(clientSocketFd, buffer, 1024);
+	if (nBytesRead < 0)
+		return (logError("[handleClientRequest] failed to read from client socket", 1));
+	std::cout << "[handleClientRequest] Content read from client socket " << clientSocketFd
+		<< " :\n----------\n" << std::string(buffer) << "\n----------\n";
+	close(clientSocketFd);
 	return (0);
 }
 
-///////////
-// UTILS //
-///////////
-
-void	Server::removeClosedConnections(void)
+int		Server::getSocketFd( void ) const
 {
-	int	ind;
-
-	std::cout << "Removing handlers of closed connections from client handlers array\n";
-	for (ind = this->client.size() - 1; ind >= 0; ind--)
-	{
-		if (this->client[ind] == NULL)
-		{
-			std::cout << "\tremoving at index " << ind << "\n";
-			this->client.erase(this->client.begin() + ind);
-		}
-	}
+	return (this->_mainSocketFd);
 }
-
-int		Server::createPollFds(struct pollfd **pfds)
-{
-	int	nfds = this->client.size() + 1;
-	int	ind;
-
-	*pfds = new struct pollfd [nfds];
-	for (ind = 0; ind < nfds - 1; ind++)
-		this->client[ind]->preparePollFd((*pfds)[ind]);
-	(*pfds)[nfds - 1].fd = this->_mainSocketFd;
-	(*pfds)[nfds - 1].events = POLLIN;
-
-	std::cout << "Currently maintaining " << nfds - 1 << " client sockets, + 1 main socket\n";
-	for (ind = 0; ind < nfds - 1; ind++)
-	{
-		std::cout << "\tclient socket at fd " << (*pfds)[ind].fd << " awaits events : ";
-		this->displayEvents((*pfds)[ind].events);
-	}
-	std::cout << "\tmain socket at fd " << (*pfds)[nfds - 1].fd << " awaits events : ";
-	this->displayEvents((*pfds)[nfds - 1].events);
-	return (nfds);
-}
-
-
-void	Server::displayEvents(short revents)
-{
-	if (revents & POLLIN)
-		std::cout << "POLLIN ";
-	if (revents & POLLOUT)
-		std::cout << "POLLOUT ";
-	if (revents & POLLHUP)
-		std::cout << "POLLHUP ";
-	if (revents & POLLERR)
-		std::cout << "POLLERR ";
-	if (revents & POLLNVAL)
-		std::cout << "POLLNVAL ";
-	std::cout << "\n";
-}
-

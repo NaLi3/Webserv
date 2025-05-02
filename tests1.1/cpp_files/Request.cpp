@@ -6,7 +6,7 @@
 /*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 16:08:40 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/01 12:11:29 by ilevy            ###   ########.fr       */
+/*   Updated: 2025/05/02 14:02:02 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,19 +84,32 @@ bool	Request::isComplete( const std::string& buffer ) const
 bool	Request::parse( const std::string& raw_request )
 {
 	size_t	header_end;
+
 	header_end = raw_request.find("\r\n\r\n");
 	if (header_end == std::string::npos)
+	{
+		std::cout << "111111" << std::endl;
 		return (false);
+	}
 	if (this->parse_request(raw_request, header_end) == false)
+	{
+		std::cout << "222222" << std::endl;
 		return (false);
+	}
 	if (this->parse_headers(raw_request, header_end) == false)
+	{
+		std::cout << "333333333" << std::endl;
 		return (false);
+	}
 	if (this->_headers.count("Content-Length"))
 	{
 		int contentLength = std::atoi(this->_headers["Content-Length"].c_str());
 		std::string body_section = raw_request.substr(header_end + 4);
 		if ((int)body_section.size() < contentLength)
+		{
+			std::cout << "444444444" << std::endl;
 			return (false);
+		}
 		this->_body = body_section.substr(0, contentLength);
 	}
 	this->_parsed = true;
@@ -130,6 +143,7 @@ bool	Request::parse_request( const std::string& raw_request, size_t header_end )
 
 	this->_path = request_line.substr(method_end + 1, path_end - method_end - 1);
 	this->_httpVersion = request_line.substr(path_end + 1);
+	return (true);
 }
 
 bool	Request::parse_headers( const std::string& raw_request, size_t header_end )
@@ -146,7 +160,7 @@ bool	Request::parse_headers( const std::string& raw_request, size_t header_end )
 	{
 		line_end = header_string.find("\r\n", line_start);
 		if (line_end == std::string::npos)
-			return (false);
+			break;
 		line_content = header_string.substr(line_start, line_end - line_start);
 		colon_pos = line_content.find(':');
 		if (colon_pos != std::string::npos)

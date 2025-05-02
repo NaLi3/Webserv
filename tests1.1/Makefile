@@ -6,36 +6,47 @@
 #    By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/04/26 15:17:49 by ilevy             #+#    #+#              #
-#    Updated: 2025/04/26 15:21:17 by ilevy            ###   ########.fr        #
+#    Updated: 2025/05/02 14:23:49 by ilevy            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = webserv
 
 SRCS_FOLDER = cpp_files/
-SRCS_OBJECTS = utils.cpp Server.cpp Socket.cpp main.cpp
+SRCS_OBJECTS = utils.cpp Request.cpp Server.cpp main.cpp Client.cpp
 SRCS = $(addprefix $(SRCS_FOLDER), $(SRCS_OBJECTS))
-OBJS = $(SRCS:.cpp=.o)
+OBJS = $(addprefix $(OBJ_DIR), $(SRCS_OBJECTS:.cpp=.o))
+OBJ_DIR = o_files/
 INCLUDE = hpp_files/
 
-CFLAGS = -Wall -Wextra -Werror -std=c++98
+CFLAGS = -Wall -Wextra -Werror
 CC = clang++
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) -I $(INCLUDE) $(OBJS) -o $(NAME)
+	@echo "Compiled the cpp files into o_files!"
+	@echo "Compiled Webserv!"
 
-%.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+$(OBJ_DIR)%.o: $(SRCS_FOLDER)%.cpp | objdir_mk
+	$(CC) $(CFLAGS) -I $(INCLUDE) -c $< -o $@
+
+objdir_mk:
+	@mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -f $(OBJS)
+	@rm -rf $(OBJ_DIR)
+	@echo "Cleaned o_files!"
+
 
 fclean: clean
-	rm -f $(NAME)
+	@rm -f $(NAME)
+	@echo "Cleaned Webserv!"
 
 re: fclean all
 
 names:
 	echo $(SRCS) $(OBJS)
+
+.PHONY:	re all fclean clean objdir_mk names
