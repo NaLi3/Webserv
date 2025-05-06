@@ -34,7 +34,6 @@ class	Client
 		std::vector<t_vserver>&			_vservers;
 		int								_state;
 		unsigned int					_nbytesSent_tmp;
-
 		std::string						_request_buffer;
 		std::string						_response_buffer;
 		bool							_response_sent;

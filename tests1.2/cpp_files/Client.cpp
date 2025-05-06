@@ -141,7 +141,7 @@ int	Client::handleCompleteRequest(void)
 	else
 	{
 		request.log_request();
-		Response	response(request, this->_mainSocket, this->_vservers, this->_mainSocket.vservIndexes);
+		Response	response(request, this->_socketFd, this->_mainSocket, this->_vservers, this->_mainSocket.vservIndexes);
 
 		if (response.produceResponse())
 			return (1);

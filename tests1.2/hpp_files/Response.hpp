@@ -21,6 +21,7 @@ class Response
 {
 	private:
 		Request&		_request;
+		int				_clientSocket;
 		t_mainSocket&	_mainSocket;
 		t_vserver*		_vserv;
 		t_location*		_location;
@@ -33,17 +34,21 @@ class Response
 		t_location*		identifyLocation();
 		bool			isCGIRequest();
 		int				executeCGIScript();
-
+		std::string		getSameType( const std::string& path );
 		void			extractExtension();
 
 
 	public:
-		Response( Request& request, t_mainSocket& mainSocket, std::vector<t_vserver>& vservers, std::set<int>& vservIndexes );
+		Response( Request& request, int clientSocket, t_mainSocket& mainSocket, std::vector<t_vserver>& vservers, std::set<int>& vservIndexes );
 		~Response( void );
+		void			handleGet(int clientSocket);
+		void			handlePost(t_vserver* vserver, int clientSocket);
+		void			handleDelete(t_vserver* vserver, int clientSocket);
 		int				produceResponse(void);
-
 		std::string&	getResponseBuffer(void);
 
 };
+
+bool ends_with( const std::string& str, const std::string& suffix );
 
 #endif
