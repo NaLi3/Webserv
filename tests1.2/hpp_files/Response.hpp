@@ -17,6 +17,8 @@
 
 # include "webserv.hpp"
 
+# define MAXBODYSIZE 4096
+
 class Response
 {
 	private:
@@ -42,8 +44,9 @@ class Response
 		Response( Request& request, int clientSocket, t_mainSocket& mainSocket, std::vector<t_vserver>& vservers, std::set<int>& vservIndexes );
 		~Response( void );
 		void			handleGet(int clientSocket);
-		void			handlePost(t_vserver* vserver, int clientSocket);
-		void			handleDelete(t_vserver* vserver, int clientSocket);
+		void			handlePost( int clientSocket );
+		void			handleDelete( int clientSocket );
+		void			handleError( int clientSocket, int code, const std::string& message );
 		int				produceResponse(void);
 		std::string&	getResponseBuffer(void);
 

@@ -32,7 +32,6 @@ t_vserver* Response::identifyVserver(std::vector<t_vserver>& vservers, std::set<
 	std::pair<uint32_t, uint16_t> clientAddr;
 	in_addr addr;
 	size_t sep;
-
 	// Split host:port with the :
 	clientAddr = this->_mainSocket.portaddr;
 	sep = hostHeader.find(':');
@@ -43,7 +42,6 @@ t_vserver* Response::identifyVserver(std::vector<t_vserver>& vservers, std::set<
 		hostName = hostHeader.substr(0, sep);
 		hostPort = hostHeader.substr(sep + 1);
 	}
-
 	// Convert hostName to IP if it's an IP or a localhost
 	if ((hostName == "localhost" && inet_aton("127.0.0.1", &addr))
 		|| inet_aton(hostName.c_str(), &addr))
@@ -51,16 +49,13 @@ t_vserver* Response::identifyVserver(std::vector<t_vserver>& vservers, std::set<
 		clientAddr.first = ntohl(addr.s_addr);
 		hostName.clear();
 	}
-
 	// Convert port string to integer for later
 	if (!hostPort.empty())
 		clientAddr.second = static_cast<uint16_t>(std::strtol(hostPort.c_str(), nullptr, 10));
-
 	std::cout << "Host string in request: " << hostHeader
 			<< " -> hostName: " << hostName
 			<< " + hostPort: " << hostPort
 			<< " -> portaddr: (" << clientAddr.first << ", " << clientAddr.second << ")\n";
-
 	// Try matching virtual servers
 	for (std::set<int>::iterator it = vservIndexes.begin(); it != vservIndexes.end(); ++it)
 	{
@@ -76,14 +71,11 @@ t_vserver* Response::identifyVserver(std::vector<t_vserver>& vservers, std::set<
 				break;
 			}
 		}
-
 		if (!portMatch)
 			continue ;
-
 		// No hostName? Then port match is enough
 		if (hostName.empty())
 			return (&vserver);
-
 		// Match server_name
 		for (std::set<std::string>::iterator nameIt = vserver.serverNames.begin(); nameIt != vserver.serverNames.end(); ++nameIt)
 		{
@@ -97,10 +89,149 @@ t_vserver* Response::identifyVserver(std::vector<t_vserver>& vservers, std::set<
 
 void	Response::handleGet(int clientSocket)
 {
+	// Find correct server location.
 	t_location*	location = this->identifyLocation();
 	if (!location)
 	{
-		std::cout << "Error 404: Page not found" << std::endl;
+		this->handleError(this->_clientSocket, 404, "Page not Found");
+		return;
+	}
+	std::string requestPath;
+	std::string root;
+	std::string fullPath;
+	// Verify the request path, or if simple server access start at root.
+	requestPath = this->_request.getPath();
+	if (requestPath.empty() || requestPath[0] != '/')
+		requestPath = "/";
+	root = location->rootPath;
+	fullPath = root + requestPath;
+	char realRoot[PATH_MAX];
+	char realFile[PATH_MAX];
+	// Get the full root path and the full path to file.
+	if (!realpath(root.c_str(), realRoot) || !realpath(fullPath.c_str(), realFile))
+	{
+		this->handleError(clientSocket, 404, "Page not Found");
+		return;
+	}
+	// Verify that the file you want to access is in the allowed root.
+	if (std::string(realFile).find(realRoot) != 0)
+	{
+		this->handleError(clientSocket, 403, "Forbidden");
+		return;
+	}
+	//If the file that you want to access isnt a file or has wrong permissions
+	struct stat fileStat;
+	if (stat(realFile, &fileStat) != 0 || !S_ISREG(fileStat.st_mode))
+	{
+		this->handleError(clientSocket, 404, "Page not Found");
+		return;
+	}
+	// If the server can't give you a reproduction of its content.
+	std::ifstream file(realFile, std::ios::in | std::ios::binary);
+	if (!file)
+	{
+		this->handleError(clientSocket, 500, "Internal server error");
+		return;
+	}
+	size_t	fileSize = fileStat.st_size;
+	char*	buffer = new char[fileSize];
+	if (!buffer)
+	{
+		this->handleError(clientSocket, 500, "Internal server error");
+		return;
+	}
+	file.read(buffer, fileSize);
+	file.close();
+	//Send the response to the server using the http format.
+	std::ostringstream response;
+	response << "HTTP/1.1 200 OK\r\n"
+			 << "Content-Type: " << this->getSameType(fullPath) << "\r\n"
+			 << "Content-Length: " << fileSize << "\r\n"
+			 << "Connection: close\r\n"
+			 << "\r\n";
+	std::string headerString = response.str();
+	send(clientSocket, headerString.c_str(), headerString.size(), 0);
+	send(clientSocket, buffer, fileSize, 0);
+	delete[] buffer;
+}
+
+void	Response::handlePost( int clientSocket )
+{
+	t_location* location = this->identifyLocation();
+	if (!location)
+	{
+		this->handleError(clientSocket, 404, "Page Not Found");
+		return;
+	}
+	std::string requestPath = this->_request.getPath();
+	if (requestPath.empty() || requestPath[0] != '/')
+		requestPath = "/";
+	std::string root = location->rootPath;
+	std::string fullPath = root + requestPath;
+	char realRoot[PATH_MAX];
+	char realFile[PATH_MAX];
+	if (!realpath(root.c_str(), realRoot) || !realpath(fullPath.c_str(), realFile))
+	{
+		this->handleError(clientSocket, 404, "Page Not Found");
+		return;
+	}
+	if (std::string(realFile).find(realRoot) != 0)
+	{
+		this->handleError(clientSocket, 403, "Forbidden");
+		return;
+	}
+	// Get content length
+	std::map<std::string, std::string> headers = this->_request.getHeaders();
+	std::map<std::string, std::string>::iterator it = headers.find("Content-Length");
+	if (it == headers.end())
+	{
+		this->handleError(clientSocket, 411, "Length Required");
+		return;
+	}
+	size_t contentLength = static_cast<size_t>(strtol(it->second.c_str(), NULL, 10));
+	if (contentLength > MAXBODYSIZE)
+	{
+		this->handleError(clientSocket, 413, "Payload Too Large");
+		return;
+	}
+	// Get body from request as char*
+	const char* rawBody = this->_request.getBody().c_str();
+	if (!rawBody)
+	{
+		this->handleError(clientSocket, 400, "Bad Request");
+		return;
+	}
+	bool fileExists = (access(fullPath.c_str(), F_OK) == 0);
+	// Save body to file (you could customize the destination path)
+	std::ofstream outfile(fullPath.c_str(), std::ios::binary);
+	if (!outfile)
+	{
+		this->handleError(clientSocket, 500, "Internal Server Error");
+		return;
+	}
+	outfile.write(rawBody, contentLength);
+	outfile.close();
+	// Send a success response
+	std::string status;
+	if (fileExists == false)
+		status = "201 Created";
+	else
+		status = "200 OK";
+	std::string response =
+		"HTTP/1.1 " + status + "\r\n"
+		"Content-Type: text/plain\r\n"
+		"Content-Length: 17\r\n"
+		"Connection: close\r\n"
+		"\r\n";
+	send(clientSocket, response.c_str(), response.size(), 0);
+}
+
+void	Response::handleDelete( int clientSocket )
+{
+	t_location*	location  = identifyLocation();
+	if (!location)
+	{
+		this->handleError(clientSocket, 404, "Page Not Found");
 		return;
 	}
 	std::string requestPath;
@@ -109,42 +240,40 @@ void	Response::handleGet(int clientSocket)
 	requestPath = this->_request.getPath();
 	if (requestPath.empty() || requestPath[0] != '/')
 		requestPath = "/";
-	root = location->rootPath;
 	fullPath = root + requestPath;
 	char realRoot[PATH_MAX];
 	char realFile[PATH_MAX];
 	if (!realpath(root.c_str(), realRoot) || !realpath(fullPath.c_str(), realFile))
 	{
-		std::cout << "Error 404: Page not found" << std::endl;
+		this->handleError(clientSocket, 404, "Page Not Found");
 		return;
 	}
 	if (std::string(realFile).find(realRoot) != 0)
 	{
-		std::cout << "Error 403: Forbidden page" << std::endl;
+		this->handleError(clientSocket, 403, "Forbidden File");
 		return;
 	}
 	struct stat fileStat;
-	if (stat(realFile, &fileStat) != 0 || !S_ISREG(fileStat.st_mode))
+	if (stat(realFile, &fileStat) != 0)
 	{
-		std::cout << "Error 404: Page not found" << std::endl;
+		this->handleError(clientSocket, 404, "File Not Found");
 		return;
 	}
-	std::ifstream file(realFile, std::ios::in | std::ios::binary);
-	if (!file)
+	if (!S_ISREG(fileStat.st_mode))
 	{
-		std::cout << "Error 500: Internal Server Error" << std::endl;
-		return;
+		this->handleError(clientSocket, 403, "Cannot Delete Non-Regular File");
+		return ;
 	}
-	std::ostringstream bodyStream;
-	bodyStream << file.rdbuf();
-	std::string body = bodyStream.str();
+	if (remove(realFile) != 0)
+	{
+		this->handleError(clientSocket, 500, "Failed To Delete File");
+		return ;
+	}
 	std::ostringstream response;
 	response << "HTTP/1.1 200 OK\r\n"
-			 << "Content-Type: " << this->getSameType(fullPath) << "\r\n"
-			 << "Content-Length: " << body.size() << "\r\n"
+			 << "Content-Length: 0\r\n"
 			 << "Connection: close\r\n"
-			 << "\r\n"
-			 << body;
+			 << "\r\n";
 	send(clientSocket, response.str().c_str(), response.str().size(), 0);
 }
 
@@ -229,6 +358,18 @@ std::string	Response::getSameType( const std::string& path )
 	if (ends_with(path, ".js"))
 		return ("application/javascript");
 	return ("application/octet-stream");
+}
+
+void	Response::handleError( int clientSocket, int code, const std::string& message )
+{
+	std::ostringstream response;
+	response << "HTTP/1.1 "<< code << " " << message << "\r\n"
+			 << "Content-Type: text/plain\r\n"
+			 << "Content-Length: " << message.size() << "\r\n"
+			 << "Connection: close\r\n"
+			 << "\r\n"
+			 << message;
+	send(clientSocket, response.str().c_str(), response.str().size(), 0);
 }
 
 t_location*	Response::identifyLocation( void )
