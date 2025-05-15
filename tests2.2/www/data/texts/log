@@ -1,0 +1,33 @@
+== Info:   Trying 127.0.0.1:8080...
+== Info: Connected to localhost (127.0.0.1) port 8080 (#0)
+=> Send header, 200 bytes (0xc8)
+0000: POST /images/ HTTP/1.1
+0018: Host: localhost:8080
+002e: User-Agent: curl/7.81.0
+0047: Accept: */*
+0054: Transfer-Encoding: chunked
+0070: Content-Type: multipart/form-data; boundary=--------------------
+00b0: ----ad26eb21bf64a432
+00c6: 
+=> Send data, 227 bytes (0xe3)
+0000: dd
+0004: --------------------------ad26eb21bf64a432
+0030: Content-Disposition: form-data; name="file"; filename="lorem2.tx
+0070: t"
+0074: Content-Type: text/plain
+008e: 
+0090: Exeunt Horatio.Fortinbras.Yorick.
+00b3: --------------------------ad26eb21bf64a432--
+00e1: 
+== Info: Signaling end of chunked upload via terminating chunk.
+=> Send data, 5 bytes (0x5)
+0000: 0
+0003: 
+== Info: Mark bundle as not supporting multiuse
+<= Recv header, 17 bytes (0x11)
+0000: HTTP/1.1 200 OK
+<= Recv header, 19 bytes (0x13)
+0000: Content-Length: 0
+<= Recv header, 2 bytes (0x2)
+0000: 
+== Info: Connection #0 to host localhost left intact
