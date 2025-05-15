@@ -220,7 +220,7 @@ int	Client::finishRequestHeaders(char *buffer, size_t bufferSize, ssize_t indHea
 
 	this->_requestHeaders.append(buffer, indHeadersEnd + 1);
 	std::cout << "\t\t-> full request headers :\n\033[31m<\n" << this->_requestHeaders << "\n>\033[0m\n";
-	this->_request = new Request(this->_mainSocket);
+	this->_request = new Request(this->_mainSocket, this->_socketFd);
 	if (this->_request->parse(this->_requestHeaders))
 	{
 		std::cout << "\t\tMalformed request : headers cannot be parsed\n";

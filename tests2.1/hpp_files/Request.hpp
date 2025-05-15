@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 15:48:28 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/13 18:38:19 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/15 07:50:04 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,10 +23,12 @@
 // Parse will check the compliance of the HTTP request to the http/tcp standard
 // and return false if the request is not compliant
 
+# define MAX_CHUNKED_SIZE 1024 * 1024
+
 class Request
 {
 	public:
-		Request(t_mainSocket& _mainSocket);
+		Request(t_mainSocket& _mainSocket, int socket_fd );
 		~Request();
 		bool				parse(const std::string& raw_request);
 		void				allocateBody();
@@ -37,8 +39,10 @@ class Request
 		static ssize_t		containsHeadersEnd(char *lastBuffer, char* buffer, size_t bufferSize);
 		// Memory of server's config
 		t_mainSocket&						_mainSocket;
+		int									_socketFd;
 		// Storing request body
 		bool								_hasBody;
+		bool								_hasChunked;
 		unsigned long						_bodySize;
 		unsigned long						_nReceivedBodyBytes;
 		char*								_body;
@@ -60,6 +64,8 @@ class Request
 	private:
 		bool				parseFirstLine(const std::string& rawHeaders);
 		bool				parseHeaders(const std::string& rawHeaders);
+		bool				parseChunkedBody( int socket_fd );
+		std::string			readLine( int socket_fd );
 		bool				checkHeaders();
 		void				extractFromURL();
 		void				extractFromHost();

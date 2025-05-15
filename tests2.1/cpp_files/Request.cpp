@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 16:08:40 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/13 18:45:56 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/15 07:54:55 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@
 // 		useful to give a default value to the request 'host IP address'
 // 			(when the 'host' header of the request uses a domain name and not an IP)
 // 		<=> the server IP address used by server to communicate with the client
-Request::Request(t_mainSocket& mainSocket) : _mainSocket(mainSocket)
+Request::Request( t_mainSocket& mainSocket, int socket_fd ) : _mainSocket(mainSocket), _socketFd(socket_fd)
 {
 	std::cout << "Constructor for Request\n";
 	this->_body = NULL;
@@ -176,6 +176,16 @@ bool	Request::checkHeaders()
 		std::cout << "[Req::parse] Error : Request with body lacks Content-Type header\n";
 		return (1);
 	}
+	if (this->_headers.count("Content-Length") && this->_headers.count("Transfer-Encoding"))
+	{
+		std::cout << "[Req::parse] Error: Chunked Request contains Unchunked body\n";
+		return (1);
+	}
+	if (this->_headers["Transfer-Encoding"] == "chunked")
+	{
+		if (!this->parseChunkedBody(this->_socketFd))
+			return (1);
+	}
 	if (!(this->_hasBody) && this->_headers.count("Content-Type") > 0)
 	{
 		std::cout << "[Req::parse] Error : Request without body has Content-Type header\n";
@@ -212,14 +222,65 @@ bool	Request::parseHeaders(const std::string& rawHeaders)
 		}
 		line_start = line_end + 2;
 	}
+	if (!this->checkHeaders())
+		return (0);
+	if (this->_headers["Transfer-Encoding"] == "chunked")
+	{
+		this->_hasChunked = 1;
+		this->_bodySize = 0;
+	}
 	if (this->_headers.count("Content-Length") > 0)
 	{
 		this->_hasBody = 1;
 		this->_bodySize = static_cast<unsigned long>(strtol(this->_headers["Content-Length"].c_str(), NULL, 10));
 	}
-	if (this->checkHeaders())
-		return (1);
-	return (0);
+	return (1);
+}
+
+// This function looks through the chunked body line by line, searching for the trailing \r\n to remove and add to the body.
+// The size of the body is modified through execution and memory is reallocated upon each loop for as long as content is found using chunkBuffer and newBody.
+bool	Request::parseChunkedBody( int socket_fd )
+{
+	this->_body = NULL;
+	this->_bodySize = 0;
+	while (true)
+	{
+		std::string line = this->readLine(socket_fd);
+		if (line.empty())
+			return (false);
+		if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
+			line = line.substr(0, line.size() - 2);
+		size_t	chunkSize = strtoul(line.c_str(), NULL, 16);
+		if (chunkSize == 0)
+			break ;
+		char* chunkBuffer = new char[chunkSize];
+		size_t	totalRead = 0;
+		while (totalRead < chunkSize)
+		{
+			ssize_t bytes = recv(socket_fd, chunkBuffer + totalRead, chunkSize - totalRead, 0);
+			if (bytes <= 0)
+			{
+				delete[] chunkBuffer;
+				return (false);
+			}
+			totalRead += bytes;
+		}
+		char* newBody = new char[this->_bodySize + chunkSize];
+		if (this->_body)
+		{
+			memcpy(newBody, this->_body, this->_bodySize);
+			delete[] this->_body;
+		}
+		memcpy(newBody + this->_bodySize, chunkBuffer, chunkSize);
+		delete[] chunkBuffer;
+		this->_body = newBody;
+		this->_bodySize += chunkSize;
+		std::string crlf = readLine(socket_fd);
+		if (crlf != "\r\n" && crlf != "")
+			return (false);
+	}
+	this->_parsed = true;
+	return (true);
 }
 
 //////////////////////
@@ -345,7 +406,8 @@ void	Request::logRequest(void)
 		<< "\ttoDir " << this->_toDir << "\n"
 		<< "\textension " << this->_extension << "\n"
 		<< "\tpathInfo " << this->_pathInfo << "\n"
-		<< "\tqueryString " << this->_queryString << "\n";
+		<< "\tqueryString " << this->_queryString << "\n"
+		<< "\thasChunked" << this->_hasChunked << "\n";
 	std::cout << "Information on body :\n"
 		<< "\thasBody " << this->_hasBody << "\n"
 		<< "\tbodySize " << this->_bodySize << "\n";
@@ -359,4 +421,19 @@ void	Request::logRequest(void)
 			std::cout << this->_body[ind];
 	}
 	std::cout << "\n>\033[0m\n";
+}
+
+std::string	Request::readLine( int socket_fd )
+{
+	std::string line;
+	char	c;
+	while (recv(socket_fd, &c, 1, 0) == 1)
+	{
+		line += c;
+		if (line.size() >= 2 
+			&& line[line.size() - 2] == '\r' 
+			&& line[line.size() - 1] == '\n')
+			break ;
+	}
+	return (line);
 }
