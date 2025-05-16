@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 15:48:28 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/16 13:43:56 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/16 19:35:39 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,6 +79,7 @@ class Request
 		bool								_toDir;
 		t_portaddr							_hostPortaddr;
 		std::string							_hostName;
+		std::string							_cookieValue;
 
 	private:
 		// Parsing headers

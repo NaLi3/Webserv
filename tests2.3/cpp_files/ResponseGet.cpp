@@ -63,6 +63,7 @@ int	Response::makeFileResponse(std::string& fullPath, size_t fileSize, std::stri
 {
 	std::stringstream	headersStream;
 	std::string			headersString;
+	std::string			cookieValue;
 	size_t				totalSize;
 
 	std::cout << "\tsending regular file at : " << fullPath << "\n"
@@ -70,8 +71,10 @@ int	Response::makeFileResponse(std::string& fullPath, size_t fileSize, std::stri
 	// Create HTTP format headers for response
 	headersStream << "HTTP/1.1 " << status << "\r\n"
 			 << "Content-Type: " << this->getResponseBodyType(fullPath) << "\r\n"
-			 << "Content-Length: " << fileSize << "\r\n"
-			 << "\r\n";
+			 << "Content-Length: " << fileSize << "\r\n";
+	if ((cookieValue = this->generateCookie()) != "no_cookie")
+		headersStream << "Set-Cookie: user_cookie=" << cookieValue << "\r\n"
+			 		  << "\r\n";
 	headersString = headersStream.str();
 	totalSize = headersString.size() + fileSize;
 	std::cout << "[Res::fileResponse] headers of size " << headersString.size() << " + file of size "

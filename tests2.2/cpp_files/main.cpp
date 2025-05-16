@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/28 15:09:46 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/15 20:27:16 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/16 18:06:28 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -250,16 +250,16 @@ int	main(int ac, char **av)
 	(un bool dans Client qui demande de close la connexion quand l'envoi est fini plutot que de passer en read,
 	 et donc un check du retour de response dans Server pour detruire l'instance une fois qu'elle a close la connexion)
 + commentaire sur le fait qu'une malformed request avec un body mais pas de "content-length" va desynchroniser la connexion
-- verifier tous les champs non implementes du fichier de config
++ verifier tous les champs non implementes du fichier de config
 	+ pages d'erreur
 	+ max taille de body
 	+ methodes acceptees pour une location
 	\ redirections 301 (rajouter champ statut force dans <Request>)
-- implementer methode PUT (qui est une copie de POST non-CGI)
-- actuellement la reponse est ecrite en une fois dans le socket si possible,
++ implementer methode PUT (qui est une copie de POST non-CGI)
++ actuellement la reponse est ecrite en une fois dans le socket si possible,
 	verifier si on devrait definir une taille de buffer de sortie
-- verifier le fonctionnement des autres methodes d'envoi de donnees de formulaire (querystring, formulaire)
-- verifier si il y a un truc a gerer avec les headers composes de plusieurs champs separes par des ';'
++ verifier le fonctionnement des autres methodes d'envoi de donnees de formulaire (querystring, formulaire)
+~ verifier si il y a un truc a gerer avec les headers composes de plusieurs champs separes par des ';'
 - tester profondement les cas ou on fait une requete sur '/' (la racine)
 - correct handling of errors (cleaning/closing sockets when necessary)
 	\ POLLERR or a read failure on a dedicated socket : should close this socket only, not whole server
@@ -267,7 +267,7 @@ int	main(int ac, char **av)
 	\ all cases where config file has errors (eg. 0 virtual servers defined)
 - passer la gestion de SIGINT dans l'initialisation de <Server>
 - check protocol version
-- agrementer le HTML de la default error page
++ agrementer le HTML de la default error page
 - implementer tous les '#f'
 - permettre a la methode DELETE de supprimer des directories
 - boucle bizarre sur les error pages : si page pour 404 contient des ressources,

@@ -249,6 +249,6 @@ int	Response::handleDelete()
 	if (remove(fullPath.c_str()))
 		return (this->makeErrorResponse("500 Internal Server Error"));
 	std::cout << "\tfile successfully deleted\n";
-	this->makeSuccessResponse("500 Internal Server Error");
+	this->makeSuccessResponse("200 OK");
 	return (0);
 }

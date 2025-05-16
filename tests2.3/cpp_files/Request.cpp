@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 16:08:40 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/16 17:14:33 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/16 19:39:29 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -508,6 +508,8 @@ bool	Request::checkHeaders()
 
 	if (this->_headers.count("Host") == 0)
 		return (logError("[Req::parse] Error : Request lacks 'host' header", 0));
+	if (this->_headers.count("Cookie") != 0)
+		this->_cookieValue = this->_headers["Cookie"];
 	if (hasBody && this->_method == "GET")
 		return (logError("[Req::parse] Error : Request GET with body", 0));
 	if (this->_headers.count("Transfer-Encoding") && this->_headers["Transfer-Encoding"] != "chunked")

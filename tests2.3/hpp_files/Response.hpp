@@ -117,9 +117,9 @@ class Response
 		int					tryServeIndex(std::string& fullPath);
 		int					handleGetOnDir();
 		// Produce response
-		int					handleNotCGI(void);
-		bool				isCGIRequest();
-
+		int					handleNotCGI( void );
+		bool				isCGIRequest( void );
+		std::string			generateCookie( void );
 };
 
 #endif

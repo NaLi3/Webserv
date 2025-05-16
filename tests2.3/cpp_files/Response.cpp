@@ -265,6 +265,18 @@ int	Response::makeRedirResponse(std::string status, std::string newPath)
 	return (0);
 }
 
+//Simple value generator for cookie, dependant on finding blue.txt or green.txt to see the cookie color.
+std::string	Response::generateCookie( void )
+{
+	std::string cookie_value = "no_cookie";
+
+	if (this->_request->_filePath.find("blue.txt") != std::string::npos)
+		cookie_value = "blue_cookie";
+	else if (this->_request->_filePath.find("green.txt") != std::string::npos)
+		cookie_value = "green_cookie";
+	return (cookie_value);
+}
+
 // Generates the response for a success without body (eg. for successful upload with POST/PUT)
 int	Response::makeSuccessResponse(std::string status)
 {
@@ -275,6 +287,7 @@ int	Response::makeSuccessResponse(std::string status)
 	ss << "HTTP/1.1 " << status << "\r\n"
 		<< "Content-Length: " << (status.size() + 13) << "\r\n"
 		<< "Content-Type: text/html\r\n\r\n"
+		<< "Set-Cookie: user-cookie=" << this->generateCookie() << "\r\n"
 		<< "<html>" << status << "</html>";
 	responseStr = ss.str();
 	this->makeResponseFromString(responseStr);

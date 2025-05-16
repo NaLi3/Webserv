@@ -150,7 +150,7 @@ void	Response::divideMultipart(std::string& dirPath, char* boundary, size_t boun
 	this->makeSuccessResponse("200 OK");
 }
 
-int	Response::handlePostMultipart()
+int	Response::handlePostMultipart( void )
 {
 	char*			boundary;
 	size_t			boundarySize;
@@ -176,7 +176,7 @@ int	Response::handlePostMultipart()
 // HANDLING POST REQUESTS - SIMPLE CONTENT //
 /////////////////////////////////////////////
 
-int	Response::handlePostRaw()
+int	Response::handlePostRaw( void )
 {
 	std::string	fullPath;
 
@@ -196,7 +196,7 @@ int	Response::handlePostRaw()
 
 // Handles POST requests without CGI -> the request contains the content of a file
 // that must be stored on the server side at the location given by the path
-int	Response::handlePost()
+int	Response::handlePost( void )
 {
 	if (!(this->_request->_hasBody))
 		return (this->makeErrorResponse("400 Bad Request (POST with no body)"));
@@ -212,7 +212,7 @@ int	Response::handlePost()
 // HANDLING PUT REQUESTS //
 ///////////////////////////
 
-int	Response::handlePut()
+int	Response::handlePut( void )
 {
 	std::string fullPath;
 	if (!this->_request->_hasBody)
@@ -232,7 +232,7 @@ int	Response::handlePut()
 // HANDLING DELETE REQUESTS //
 //////////////////////////////
 
-int	Response::handleDelete()
+int	Response::handleDelete( void )
 {
 	std::string	fullPath;
 	bool		fileExists;
@@ -249,6 +249,6 @@ int	Response::handleDelete()
 	if (remove(fullPath.c_str()))
 		return (this->makeErrorResponse("500 Internal Server Error"));
 	std::cout << "\tfile successfully deleted\n";
-	this->makeSuccessResponse("500 Internal Server Error");
+	this->makeSuccessResponse("200 OK");
 	return (0);
 }
