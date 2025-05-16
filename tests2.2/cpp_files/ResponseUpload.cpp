@@ -43,9 +43,15 @@ int	Response::uploadFile(std::string& fullPath, unsigned long fileSize,
 	if (makeResponse)
 	{
 		if (fileExists)
+		{
+			std::cout << "HOLA chico";
 			this->makeSuccessResponse("200 OK");
+		}
 		else
+		{
+			std::cout << "HOLA chica";
 			this->makeSuccessResponse("201 Created");
+		}
 	}
 	return (0);
 }
@@ -193,13 +199,33 @@ int	Response::handlePostRaw()
 int	Response::handlePost()
 {
 	if (!(this->_request->_hasBody))
-		return (this->makeErrorResponse("400 Bad Request (POST/PUT with no body)"));
+		return (this->makeErrorResponse("400 Bad Request (POST with no body)"));
 	if (this->_request->_headers.count("Content-Type") == 0)
-		return (this->makeErrorResponse("400 Bad Request (POST/PUT with no content type)"));
+		return (this->makeErrorResponse("400 Bad Request (POST with no content type)"));
 	if (this->_request->_headers["Content-Type"].compare(0, 19, "multipart/form-data") == 0)
 		return (this->handlePostMultipart());
 	else
 		return (this->handlePostRaw());
+}
+
+///////////////////////////
+// HANDLING PUT REQUESTS //
+///////////////////////////
+
+int	Response::handlePut()
+{
+	std::string fullPath;
+	if (!this->_request->_hasBody)
+		return (this->makeErrorResponse("400 Bad Request (PUT with no body)"));
+	if (this->_request->_headers.count("Content-Type") == 0)
+		return (this->makeErrorResponse("400 Bad Request (PUT with no content type)"));
+	if (this->_request->_toDir)
+		return (this->makeErrorResponse("403 Forbidden (PUT to directory path)"));
+	if (this->buildFullPathFile(fullPath) != 0)
+		return (this->makeErrorResponse("404 Not Found (Invalid file path for PUT)"));
+	if (fullPath.find("..") != std::string::npos)
+		return (this->makeErrorResponse("403 Forbidden (Path traversal attempt)"));
+	return (this->uploadFile(fullPath, this->_request->_bodySize, this->_request->_body, 1));
 }
 
 //////////////////////////////

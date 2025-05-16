@@ -76,7 +76,7 @@ unsigned long	Response::getResponseSize()
 // 		  the domain name given in the request's host header, ie. <this._request.hostName>
 // If no match found, returns the virtual server with the first index in <vservIndexes>
 t_vserver*	Response::identifyVserver(std::vector<t_vserver>& vservers, std::set<int>& vservIndexes)
-{	
+{
 	std::set<int>::iterator					vservInd;
 	t_vserver*								vserv;
 	std::set<t_portaddr >::iterator			vservPortaddr;
@@ -461,7 +461,7 @@ int	Response::makeErrorResponse(std::string status)
 bool	Response::isCGIRequest()
 {
 	unsigned int	ind;
-	
+
 	if (!(this->_location) || this->_location->cgiExtensions.size() == 0
 		|| (this->_request->_method != "GET" && this->_request->_method != "POST"))
 		return (0);
@@ -498,6 +498,8 @@ int	Response::handleNotCGI(void)
 		return (this->handlePost());
 	else if (this->_request->_method == "DELETE")
 		return (this->handleDelete());
+	else if (this->_request->_method == "PUT")
+		return (this->handlePut());
 	else
 		return (this->makeErrorResponse("501 Not Implemented"));
 }
@@ -517,7 +519,6 @@ int	Response::produceResponse(void)
 		return (this->makeErrorResponse("405 Method Not Allowed"));
 	if (this->_location && this->_location->acceptedMethods.count(this->_request->_method) == 0)
 		return (this->makeErrorResponse("405 Method Not Allowed"));
-
 	if (this->isCGIRequest())
 	{
 		std::cout << "\tRequest for CGI, extension " << this->_request->_extension << "\n";

@@ -33,7 +33,7 @@
 class Response
 {
 	public:
-		Response(Request* request, t_portaddr clientPortaddr, 
+		Response(Request* request, t_portaddr clientPortaddr,
 			std::vector<t_vserver>& vservers, std::set<int>& vservIndexes);
 		Response(std::string status);
 		~Response();
@@ -113,6 +113,7 @@ class Response
 		int					handlePostMultipart();
 		int					handlePostRaw();
 		int					handlePost();
+		int					handlePut();
 		int					handleDelete();
 		// Handle GET on directories
 		int					generateDefaultIndexHtml(std::string& fullPath, std::string& body);
