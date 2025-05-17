@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test CGI Form</title>
+</head>
+<body>
+    <h1>Form (GET + querystring) :</h1>
+    <form action="/app/handleform.py" method="get">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+
+        <label for="surname">Surname:</label>
+        <input type="text" id="surname" name="surname"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+	<h1>Form (POST + urlencoded) :</h1>
+    <form action="/app/handleform.py" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+
+        <label for="surname">Surname:</label>
+        <input type="text" id="surname" name="surname"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+	<h1>Form (POST + multipart) :</h1>
+    <form action="/app/handleform.py" method="post" enctype="multipart/form-data">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+
+        <label for="surname">Surname:</label>
+        <input type="text" id="surname" name="surname"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
