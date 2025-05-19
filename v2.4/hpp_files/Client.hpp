@@ -65,6 +65,7 @@ class	Client
 		unsigned long					_responseSize;
 		std::string						_requestHeaders;
 		Request*						_request;
+		std::string						_cookie;
 };
 
 #endif

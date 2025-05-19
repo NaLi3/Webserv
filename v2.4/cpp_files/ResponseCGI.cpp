@@ -72,7 +72,7 @@ int	Response::generateCGIResponseWithDoc(std::map<std::string, std::string>& cgi
 	std::stringstream								headersStream;
 	std::string										headersString;
 	size_t											totalSize;
-	size_t											ind;											
+	size_t											ind;
 	std::string										responseHeaders;
 	std::map<std::string, std::string>::iterator	headersIt;
 
@@ -338,6 +338,8 @@ void	Response::setupCGIEnv(std::string& fullPath, std::map<std::string, std::str
 		// 	<< "\tCONTENT_TYPE to " << headers["Content-Type"] << "\n"
 		// 	<< "\tREQUEST_METHOD to " << this->_request->_method << "\n";
 	}
+	if (this->_request->_headers.count("Cookie") != 0)
+		env["HTTP_COOKIE"] = this->_request->_headers["Cookie"];
 	env["GATEWAY_INTERFACE"] = "CGI/1.1";
 	env["REMOTE_ADDR"] = std::string(inet_ntoa(clientAddress));
 	env["SCRIPT_NAME"] = fullPath.c_str();
