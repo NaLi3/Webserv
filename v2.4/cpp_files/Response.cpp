@@ -421,6 +421,11 @@ int	Response::produceResponse(void)
 		return (this->makeErrorResponse("405 Method Not Allowed"));
 	if (this->_location && !(this->_location->redirection.empty()))
 	{
+		if (this->_location->locationPath.size() > this->_request->_filePath.size())
+		{
+			std::cerr << "[ERROR] Redirection path mismatch: location path is longer than file path.\n";
+			return (this->makeErrorResponse("500 Internal Server Error"));
+		}
 		newPath = this->_location->redirection
 				+ this->_request->_filePath.substr(this->_location->locationPath.size());
 		std::cout << "\tRequest on location with redirection defined, new path : " << newPath << "\n";

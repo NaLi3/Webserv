@@ -79,8 +79,20 @@ int	Response::generateCGIResponseWithDoc(std::map<std::string, std::string>& cgi
 	headersStream << "HTTP/1.1 " << statusCode << " " << statusDesc << "\r\n"
 		<< "Content-Length: " << itostr(this->_cgiOutputBody.size()) << "\r\n";
 	for (headersIt = cgiHeaders.begin(); headersIt != cgiHeaders.end(); headersIt++)
-		headersStream << (*headersIt).first << ": " << (*headersIt).second << "\r\n";
-	headersStream << "\n";
+	{
+		if (headersIt->first == "Set-Cookie")
+		{
+			std::istringstream ss(headersIt->second);
+			std::string cookieLine;
+			while (std::getline(ss, cookieLine))
+			{
+				headersStream << "Set-Cookie" << cookieLine << "\r\n";
+			}
+		}
+		else
+			headersStream << headersIt->first << ": " << headersIt->second << "\r\n";
+	}
+	headersStream << "\r\n";
 	headersString = headersStream.str();
 	totalSize = headersString.size() + this->_cgiOutputBody.size();
 	std::cout << "[Res::fileResponse] headers of size " << headersString.size() << " + CGI output body of size "
@@ -200,7 +212,10 @@ int	Response::parseCGIHeaderLine(std::string& line, std::map<std::string, std::s
 	if (indSep >= line.size())
 		return (logError("\theader line has no value", 0));
 	value = line.substr(indSep);
-	cgiHeaders[key] = value;
+	if (key == "Set-Cookie" && cgiHeaders.count(key))
+		cgiHeaders[key] += "\n" + value;
+	else
+		cgiHeaders[key] = value;
 	return (0);
 }
 
