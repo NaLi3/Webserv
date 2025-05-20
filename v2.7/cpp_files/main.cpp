@@ -6,7 +6,7 @@
 /*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/28 15:09:46 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/20 17:42:22 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/20 20:53:04 by abedin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -329,19 +329,20 @@ int	main(int ac, char **av)
 + voir comment eviter de hang sur un script CGI qui pionce
 
 === EN BESOIN DE TESTS POUSSES
-- tests sur le fichier de config : des erreurs dans les directives, des '{}' incoherents, aucun vserver...
-	(+ faire en sorte que les locationPath commencent et se terminent par un '/')
-- tests sur l'identification du vserver et de la location :
-	\ location : selection de la location avec le plus long locationPath
-	\ vserver : selection du vserver avec servername identique au hostname
-		~ utiliser le nom de poste a 42 comme domain name, par exemple `f4r2s1:8080/`, pour les tests browsers
-		~ utiliser curl pour controler le champ 'Host' de la requete
-		~ verifier la gestion du cas ou dans le fichier de cfg un servername est une IP
-- tests ciblant la racine '/'
++ petits ajouts pour que le testeur42 fonctionne :
+	+ gestion de la methode PUT (comme POST, sans CGI)
+	+ cfg accepte les methodes POST dans location '/directory/'
+	+ effacement du saut de ligne etrange parfois intercale entre les requetes
+	+ ajout du fichier 'youpla.bla' qui doit apparemment etre present
++ tests sur l'identification du vserver et de la location :
+	+ location : selection de la location avec le plus long locationPath
+	+ vserver : selection du vserver avec servername identique au hostname
+		(utiliser curl pour controler le champ 'Host' de la requete)
 + tests de charge avec la commande `siege` (man / salon discord pour plus de precisions)
-+ tests avec le testeur fourni par 42 (requiert gestion de la methode PUT)
 + tests sur l'execution des CGI : Python et PHP
 + creer un petit script de test utilisant curl
++ tests ciblant la racine '/'
+- tests sur le fichier de config : des erreurs dans les directives, des '{}' incoherents, aucun vserver...
 
 === A ENVISAGER
 + amelioration/harmonisation de la recherche de "\r\n\r\n" dans les octets lus dans le socket :
@@ -393,16 +394,9 @@ int	main(int ac, char **av)
 // BEFORE EVALUATION //
 ///////////////////////
 
-- nettoyer le code :
-	\ retirer #f residuels
-	\ retirer logs
-	\ retirer le log des variables d'env dans le CGI handleform.py 
-
-- petits ajouts pour que le testeur fonctionne :
-	\ cfg accepte les methodes POST dans location '/directory/'
-	\ effacement du saut de ligne etrange parfois intercale entre les requetes
-	\ ajout du fichier 'youpla.bla' qui doit apparemment etre present
-
+- changement des IPs pour le vserver operant sur l'IP non boucle locale :
+	\ dans le fichier de config
+	\ dans testerVservLoc.sh
 - utilisation de siege :
 	\ -v : verbose mode ; -b : benchmarking mode
 	\ -p <URL> : URL to target
@@ -421,5 +415,18 @@ int	main(int ac, char **av)
 	\ handling POST CGIs : methods of form data transmission, execution of Python CGI
 	\ handling UPLOAD : raw, multipart/form-data, chunked bodies
 	\ handling cookies and session data : see PHPSESSID cookie in our headers, and in browser inspection
-	\ handling locations and virtual server : location secretplace, vserver on other IP, vserver with different name
+	\ handling locations and virtual server : location '/site/secretplace' in main site
+											  location '/app/' taking CGI, but no CGI if files accessed by '/programs/' !
+											  vserver on other IP / with different name (use curl)
+
++ tests de location et vserver
++ tests de '/'
+- tests de cfg file
+- tests buggy (malformed request, forbidden method, forbidden upload, body too large, body not fit)
+- page DELETE
+- relecture du sujet
+- verification tester42
+- retrait des logs (+ '#f' et logs des vars d'env dans CGI)
+- reverification tester42
+
 */

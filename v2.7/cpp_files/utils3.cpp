@@ -24,6 +24,7 @@ ssize_t	memFind(const char *mem, size_t memSize, const char *needle, size_t need
 }
 
 // Divides <path> into its directory part <dirPath> and its filename part <filename>
+// (the directory part has a trailing '/')
 // Returns 1 if no '/' separator was found
 int	divideFilePath(std::string& path, std::string& dirPath, std::string& filename)
 {

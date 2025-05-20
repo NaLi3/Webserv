@@ -62,6 +62,8 @@ int	Response::getCGIChildFd()
 // PATH TO RESOURCES //
 ///////////////////////
 
+// This section is the ugliest of the project, and needs an overhaul
+
 // Check that the resolved directory path (after executing links/'..')
 // 		contains the original directory path at the beginning
 // Necessary for security reasons : ensure that the request accesses resources
@@ -72,6 +74,8 @@ int	Response::checkResolvedDirPath(std::string& dirPath)
 {
 	char		realDirPath[PATH_MAX];
 
+	if (dirPath == "/")
+		return (0);
 	if (*(dirPath.end() - 1) == '/')
 		eraseLastChar(dirPath);
 	if (!realpath(dirPath.c_str(), realDirPath))
@@ -84,31 +88,27 @@ int	Response::checkResolvedDirPath(std::string& dirPath)
 
 // For POST/PUT requests, builds the path where the uploaded file should be stored,
 // using path additions defined in cfg file
-// (checks on request ensures that location is defined,
-//  checks on cfg file ensures that this location has an upload path or a root/alias path)
+// 		\ checks : location must be defined, and have an upload path
+// 			(this should always be true because it is checked earlier)
+// 			(a non-empty upload path with value "~" means 'here', 'here' being defined with 'alias'/'root')
 // 		\ this location may have an upload path, if so it replaces the <dirPath>
-// 		\ if uploadPath undefined this location has a root or upload path
+// 		\ if uploadPath non-empty but undefined (value "~"), this location must have a root or alias path
 // The path is built from parameter <dirPath> (the directory part of request's <_filePath>)
 // 		and stored into that same parameter
 // [cfg feature] define upload path for a certain location
 int	Response::buildFullPathUpload(std::string& dirPath)
 {
+	std::string		origPath;
+
 	if (!(this->_location) || this->_location->uploadPath.empty())
 		return (1);
 	if (this->_location->uploadPath != "~")
-		dirPath = this->_location->uploadPath + "/";
-	else if (!(this->_location->rootPath.empty()))
-		dirPath = this->_location->rootPath + dirPath;
-	else if (!(this->_location->aliasPath.empty()))
 	{
-		if (dirPath.size() < this->_location->locationPath.size())
-			return (1);
-		dirPath = this->_location->aliasPath
-				+ dirPath.substr(this->_location->locationPath.size() - 1);
+		dirPath = this->_location->uploadPath + "/";
+		return (0);
 	}
-	else
-		return (1);
-	return (0);
+	origPath = dirPath;
+	return (this->buildFullPathFile(dirPath, origPath));
 }
 
 // Transforms the <_filePath> parsed by the POST/PUT Request instance
@@ -159,22 +159,35 @@ int	Response::pathToUpload(std::string& fullPath, bool isDir)
 // 		\ if no location undefined or without root/alias, vserver may have a root directive
 // 		\ in all other cases (and in the case of an 'alias' that can't be applied),
 // 			the resource can't be found, so the function returns 1 resulting in a '404' error
-// The path is built from attribute <_filePath> of the request,
+// The path is built from attribute <origPath> (usually derived from <Request.filePath>) of the request,
 // 		and stored into parameter <fullPath> (which is a reference)
 // [cfg feature] define 'root'/'alias' path for a certain location of vserver
-int	Response::buildFullPathFile(std::string& fullPath)
+int	Response::buildFullPathFile(std::string& fullPath, std::string& origPath)
 {
 	if (this->_location && !(this->_location->rootPath.empty()))
-		fullPath = this->_location->rootPath + this->_request->_filePath;
+	{
+		if (this->_location->rootPath == "/")
+			fullPath = origPath;
+		else
+			fullPath = this->_location->rootPath + origPath;
+	}
 	else if (this->_location && !(this->_location->aliasPath.empty()))
 	{
-		if (this->_request->_filePath.size() < this->_location->locationPath.size() - 1)
+		if (origPath.size() < this->_location->locationPath.size() - 1)
 			return (1);
-		fullPath = this->_location->aliasPath
-				 + this->_request->_filePath.substr(this->_location->locationPath.size() - 1);
+		if (this->_location->aliasPath == "/" && origPath.size() > this->_location->locationPath.size() - 1)
+			fullPath = origPath.substr(this->_location->locationPath.size() - 1);
+		else
+			fullPath = this->_location->aliasPath
+					 + origPath.substr(this->_location->locationPath.size() - 1);
 	}
 	else if (!(this->_vserv->rootPath.empty()))
-		fullPath = this->_vserv->rootPath + this->_request->_filePath;
+	{
+		if (this->_location->rootPath == "/")
+			fullPath = origPath;
+		else
+			fullPath = this->_vserv->rootPath + origPath;
+	}
 	else
 		return (1);
 	return (0);
@@ -206,11 +219,12 @@ int	Response::pathToFile(std::string& fullPath,
 	if (this->_request->_filePath.empty() || this->_request->_filePath[0] != '/')
 		return (1);
 	std::cout << "\tURL path to resource : " << this->_request->_filePath << "\n";
-	if (this->buildFullPathFile(fullPath))
+	if (this->buildFullPathFile(fullPath, this->_request->_filePath))
 		return (1);
-	std::cout << "\tfull path built : " << fullPath << "\n";
+	std::cout << "\tpath built : " << fullPath << "\n";
 	if (divideFilePath(fullPath, dirPath, filename))
 		return (1);
+	std::cout << "\tpath divided : " << fullPath << "\n";
 	if (this->checkResolvedDirPath(dirPath))
 		return (1);
 	fullPath = dirPath + filename;

@@ -249,14 +249,19 @@ int	invalidLocationParams(t_location& l)
 	return (0);
 }
 
-// Adapts a real path from the config file (ie. a path referring
-// to the concrete file arborescence on server device, not the virtual server arborescence)
-// by removing trailing '/', and prepending the PWD if the path was relative
+// Takes as input <path>, a real path to a directory, and adapts it by
+// 		\ removing trailing '/' of <path> when there is one
+// 			(because those paths will usually be prepended to a request's virtual path
+// 			 that already begins with '/' -> we must avoid concatenating into a '//')
+// 		\ prepending PWD (which does not end with '/') to <path>
+// 		  if <path> is relative (ie. begins with '/')
 void	adaptRealPath(std::string& path, const std::string& pwd)
 {
-	if (path[path.size() - 1] == '/')
+	if (path == "/")
+		return ;
+	if (path[path.size() - 1] == '/') // removing trailing '/'
 		eraseLastChar(path);
-	if (path[0] != '/')
+	if (path[0] != '/') // prepending PWD to relative path
 		path = pwd + "/" + path;
 }
 
@@ -424,6 +429,8 @@ int parseLineServ(std::string& line, std::ifstream& inStream, void* storage, std
 	{
 		if (tokens.size() != 2)
 			return (logError("[serv] invalid 'location' block start", 0));
+		if (tokens[1][0] != '/' || tokens[1][tokens[1].size() - 1] != '/')
+			return (logError("[serv] invalid 'location' path : no '/' in first and last position", 0));
 		initLocation(location);
 		location.locationPath = tokens[1];
 		if (parseBlock(inStream, "[loca]", &location, &parseLineLocation, pwd))
@@ -603,10 +610,10 @@ int	parseCfgFile(std::string& cfgFileName, std::vector<t_vserver>& vservers)
 	std::string				pwd;
 	char					pwdBuffer[PATH_MAX];
 
-	std::cout << "<<< PARSING CONFIG FILE " << cfgFileName << "\n";
 	if (!getcwd(pwdBuffer, PATH_MAX))
 		return (logError("[cfg] failed to find PWD", 1));
 	pwd = std::string(pwdBuffer);
+	std::cout << "<<< PARSING CONFIG FILE " << cfgFileName << "\n\twith pwd " << pwd << "\n";
 	if (stat(cfgFileName.c_str(), &fileInfos) != 0 || !(fileInfos.st_mode & S_IFREG))
 		return (logError("Config file not found or invalid", 0));
 	inStream.open(cfgFileName.c_str());

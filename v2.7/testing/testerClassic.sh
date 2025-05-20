@@ -6,6 +6,13 @@ printf "GET /site/welcomepage.html HTTP/1.1\r\nHost:localhost:8080\r\n\r\n" | nc
 echo "\n\n\033[33m=== GET REQUEST ON PHP PAGE ===\033[0m\n"
 printf "GET /app/dynpage.php HTTP/1.1\r\nHost:localhost:8080\r\n\r\n" | nc -N 127.0.0.1 8080
 
+echo "\n\n\033[33m=== PUT UPLOAD ON ROOT ===\033[0m\n"
+printf "PUT /mymy.txt HTTP/1.1\r\nHost:localhost:8080\r\nContent-Type:text/plain\r\nContent-Length:3\r\n\r\nabd" | nc -N 127.0.0.1 8080
+echo "\n\n\033[33m=== GET REQUEST ON UPLOADED FILE ===\033[0m\n"
+printf "GET /mymy.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n" | nc -N 127.0.0.1 8080
+echo "\n\n\033[33m=== DELETE REQUEST ON UPLOADED FILE ===\033[0m\n"
+printf "DELETE /mymy.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n" | nc -N 127.0.0.1 8080
+
 echo "\n\n\033[33m=== POST CGI FOR FORM ===\033[0m\n"
 printf "POST /app/handleform.py HTTP/1.1\r\nHost:localhost:8080\r\nContent-Length:17\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nname=aa&surname=b" | nc -N 127.0.0.1 8080
 

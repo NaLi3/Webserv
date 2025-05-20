@@ -243,6 +243,8 @@ int	Response::handlePut()
 		return (this->makeErrorResponse("400 Bad Request (PUT with no content type)"));
 	if (this->_request->_toDir)
 		return (this->makeErrorResponse("403 Forbidden (PUT to directory path)"));
+	if (!(this->_location) || this->_location->uploadPath.empty())
+		return (this->makeErrorResponse("403 Forbidden (upload not allowed by location)"));
 	if (this->pathToUpload(fullPath, 0))
 		return (this->makeErrorResponse("404 Not Found (Invalid file path for PUT)"));
 	if (fullPath.find("..") != std::string::npos)

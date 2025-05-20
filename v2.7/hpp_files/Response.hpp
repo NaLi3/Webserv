@@ -62,7 +62,7 @@ class Response
 		// Find path to resource
 		int					buildFullPathUpload(std::string& dirPath);
 		int					pathToUpload(std::string& fullPath, bool isDir);
-		int					buildFullPathFile(std::string& fullPath);
+		int					buildFullPathFile(std::string& fullPath, std::string& origPath);
 		int					checkResolvedDirPath(std::string& dirPath);
 		int					pathToFile(std::string& fullPath,
 								bool checkFile, bool checkExec, size_t* fileSize);
