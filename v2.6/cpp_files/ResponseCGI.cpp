@@ -72,14 +72,26 @@ int	Response::generateCGIResponseWithDoc(std::map<std::string, std::string>& cgi
 	std::stringstream								headersStream;
 	std::string										headersString;
 	size_t											totalSize;
-	size_t											ind;											
+	size_t											ind;
 	std::string										responseHeaders;
 	std::map<std::string, std::string>::iterator	headersIt;
 
 	headersStream << "HTTP/1.1 " << statusCode << " " << statusDesc << "\r\n"
 		<< "Content-Length: " << itostr(this->_cgiOutputBody.size()) << "\r\n";
 	for (headersIt = cgiHeaders.begin(); headersIt != cgiHeaders.end(); headersIt++)
-		headersStream << (*headersIt).first << ": " << (*headersIt).second << "\r\n";
+	{
+		if (headersIt->first == "Set-Cookie")
+		{
+			std::istringstream ss(headersIt->second);
+			std::string cookieLine;
+			while (std::getline(ss, cookieLine))
+			{
+				headersStream << "Set-Cookie" << cookieLine << "\r\n";
+			}
+		}
+		else
+			headersStream << headersIt->first << ": " << headersIt->second << "\r\n";
+	}
 	headersStream << "\n";
 	headersString = headersStream.str();
 	totalSize = headersString.size() + this->_cgiOutputBody.size();
@@ -150,7 +162,7 @@ int	Response::findCGIOutputHeader(size_t& ind)
 {
 	std::vector<char>&	output = this->_cgiOutput;
 	size_t				siz = output.size();
-	
+
 	ind = 0;
 	while (ind < siz)
 	{
@@ -209,7 +221,10 @@ int	Response::parseCGIHeaderLine(std::string& line, std::map<std::string, std::s
 	if (indSep >= line.size())
 		return (logError("\theader line has no value", 0));
 	value = line.substr(indSep);
-	cgiHeaders[key] = value;
+	if (key == "Set-Cookie" && cgiHeaders.count(key))
+		cgiHeaders[key] += "\n" + value;
+	else
+		cgiHeaders[key] = value;
 	return (0);
 }
 
@@ -364,6 +379,8 @@ void	Response::setupCGIEnv(std::string& fullPath, std::map<std::string, std::str
 		// 	<< "\tCONTENT_TYPE to " << headers["Content-Type"] << "\n"
 		// 	<< "\tREQUEST_METHOD to " << this->_request->_method << "\n";
 	}
+	if (this->_request->_headers.count("Cookie") != 0)
+		env["HTTP_COOKIE"] = this->_request->_headers["Cookie"];
 	env["GATEWAY_INTERFACE"] = "CGI/1.1";
 	env["REMOTE_ADDR"] = std::string(inet_ntoa(clientAddress));
 	env["SERVER_NAME"] = this->_request->_hostName; // /!\ empty if request used IP instead of domain name
@@ -584,7 +601,7 @@ int		Response::startWaitCGI(pid_t pid, int *pipeRequest, char* tempFilePath)
 
 // Generates the name (in <tempFilePath> for the temporary file where CGI output will be directed,
 // opens that temporary file with <mkstemp>, amd returns its open file descriptor
-// Temporary file's name is composed of the portaddrs of server and client 
+// Temporary file's name is composed of the portaddrs of server and client
 int		Response::createTempFile(char* tempFilePath)
 {
 	std::stringstream	ss;
