@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abedin <abedin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: ilevy <ilevy@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/30 16:08:40 by ilevy             #+#    #+#             */
-/*   Updated: 2025/05/19 13:18:46 by abedin           ###   ########.fr       */
+/*   Updated: 2025/05/21 13:44:45 by ilevy            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -519,7 +519,7 @@ bool	Request::checkHeaders()
 		return (logError("[Req::parse] Error : Request GET with body", 0));
 	if (this->_headers.count("Transfer-Encoding") && this->_headers["Transfer-Encoding"] != "chunked")
 		return (logError("[Req::parse] Error: Transfer-Encoding has value other than 'chunked'", 0));
-	if (hasBody && this->_headers.count("Content-Type") == 0)
+	if (hasBody && this->_headers.count("Content-Type") == 0 && this->_headers["Content-Length"] != "0")
 		return (logError("[Req::parse] Error : Request with body lacks Content-Type header", 0));
 	if (!hasBody && this->_headers.count("Content-Type") > 0)
 		return (logError("[Req::parse] Error : Request without body has Content-Type header", 0));

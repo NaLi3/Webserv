@@ -290,7 +290,7 @@ int	Response::handleDelete()
 	int			ret;
 
 	std::cout << "\tchecks on DELETE\n";
-	if (this->_request->_hasBody)
+	if (this->_request->_hasBody && this->_request->_bodySize != 0)
 		return (this->makeErrorResponse("400 Bad Request (DELETE with body)"));
 	if (this->_request->_toDir)
 	{
@@ -309,6 +309,6 @@ int	Response::handleDelete()
 	if (remove(fullPath.c_str()))
 		return (this->makeErrorResponse("500 Internal Server Error"));
 	std::cout << "\tfile successfully deleted\n";
-	this->makeSuccessResponse("200 OK");
+	this->makeSuccessResponse("204 Resource has been deleted");
 	return (0);
 }

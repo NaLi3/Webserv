@@ -325,7 +325,7 @@ int	Client::finishRequestHeaders(char *buffer, size_t bufferSize, ssize_t indHea
 		return (this->handleProblematicRequest("413 Content Too Large", 1), 0);
 	if (this->_request->methodForbidden())
 		return (this->handleProblematicRequest("405 Method Forbidden", 1), 0);
-	if (this->_request->_hasBody)
+	if (this->_request->_hasBody && this->_request->_bodySize != 0)
 	{
 		this->_request->allocateBody();
 		if (indHeadersEnd == static_cast<ssize_t>(bufferSize - 1) && this->_request->_bodySize > 0)
